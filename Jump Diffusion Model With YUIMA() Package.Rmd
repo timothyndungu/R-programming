@@ -1,0 +1,212 @@
+---
+title: Jump-Diffusion Model For Europe Brent Spot Price Process For The Period May
+  1987 to May 2020
+  
+author: "Matilda Bosire"
+date: "02/06/2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+\maketitle
+
+\newpage
+
+# Introduction
+
+Introduced to economics and finance by Robert C. Merton as an extension of the jump process, a jump-diffusion model is a form of mixture model which incorporates a jump process and a diffusion process. It has its applications in Physics, pattern theory and in medical imaging. In modern finance, jump diffusion processes are used to capture discontinuous behavior in asset pricing, with their applications in stocks, bonds, short rates and option pricing.  Although still widely used in the market, the Black Scholes option pricing model has some over-simplifying assumptions that fail to capture real market characteristics of stock prices. These are particularly their leptokurtic (peakedness), heavy tails and asymmetry features which render them non-normal. To add to this is the constant volatility assumption which is not true as depicted by the market-shaped volatility smile. 
+
+Crude oil, as a consumption and investment commodity, exhibits characteristics such as rapid fluctuation, skewness, kurtosis, fat tails and jumps, and therefore cannot be modelled as a Gaussian process. As described by Merton (1976), the validity of Black-Scholes formula depends on whether the stock price dynamics can be described by a continuous-time diffusion process whose sample path is continuous with a probability of one. Thus, if the price dynamics cannot be represented by stochastic process with a continuous sample path, the Black-Scholes solution may prove to be invalid.
+
+Jump-diffusion models are particular cases of exponential Levy models which allow for the frequency of jumps to be finite. The increasing interest to apply jump diffusion models in finance is because by allowing for continuous paths, the price process behaves like a Brownian Motion thus allowing the probability that the price process will suddenly move by a large amount over a short time span to be very small. Second, they allow for perfect hedging for risks that cannot be hedged using the underlying asset only in the case of options. From the risk management perspective, jumps enable one to quantify and account for strong price movements over a short time span. Moreover, the strongest argument for their use in pricing crude oil is the non-normal characteristics of crude oil process with significant volatility observed over time. 
+
+The two basic building blocks to a jump-diffusion model, in their stochastic differential equation, are the Brownian motion (Wiener process) in the diffusion part, and the Poisson process in the jump part. The jump part enables one to model sudden and unexpected price jumps of the underlying asset (Tankov & Voltchkova, n.d.). The additional jumps ensure for better representation of the real market situation, that way, accurate forecasting can be done. 
+
+# Methodology 
+
+## Dynamics of the Jump Diffusion model
+
+A Levy process is a continuous-time stochastic process ${X_{t}, t>0}$ defined on a probability space $(\Omega, F, P)$ with the following properties:
+
+
+i) P(X_{0}=0)=1
+ii) Stationary increments: the distribution $X_{t+s}-X_{t}$ over the interval $[t, t+s]$ is independent of time.// 
+iii) Independent increments: for every increasing sequence of time $t{0},...,t_{n}$, the random variables $X_{t_{0}}, X_{t_{1}}-X_{t_{0}},...,X_{t_{n}}-X_{t_{n-1}}$ are independent.//
+iv) Stochastic continuity so that discontinuity occurs at random times i.e. $\forall \epsilon > 0, \lim_{h \rightarrow 0} P(|X_{t+s}-X_{t}| \geq \epsilon)$//
+v) The paths $X_{t}$ are Cad-lag paths i.e. almost surely right continuous with left limits//
+
+Combining a Brownian Motion with a drift and a compound Poisson process, we obtain the simplest case of a jump diffusion process with jumps (sometimes) and has a continuous but random evolution between jump times i.e.
+
+\begin{equation*}
+dX_{t}=\mu X_{t-}dt + \sigma X_{t-} dZ_{t} + X_{t-}dJ_{t}
+\end{equation*}
+where $Z_{t}$ a Brownian Motion and 
+\begin{equation*}
+J_{t} = \sum_{i=1}^{N_{t}} Y_{i}
+\end{equation*}
+is a compound Poisson process where the jump sizes $Y_{i}$ are independently and identically distributed with distribution F and number of jumps $N_{t}$ is a Poisson process with jump intensity (parameter) $\lambda$.
+
+The generalized solution to this stochastic differential equation is:
+\begin{equation*}
+X_{t}=\mu t + \sigma Z_{t} + \int_{|x|<R}^{} xN^{bar}(t, dx) + \int_{|x|\geq R}^{} xN(t, dx)
+\end{equation*}
+where for the given restraint $R$, $\int_{|x|\geq R}^{} xN(t, dx)$ is the sum of infinitely many jumps of size greater than $R$, while $\int_{|x|<R}^{} xN^{bar}(t, dx)$ is the sum of small jumps of size less than $R$. $N(t, dx) = N(dt, dx) - v (dx)$ is the compensated Poisson random measure and $v (dx)$ the Levy measure of the Levy process.
+
+Generally, SDE's with Poisson jumps for asset price $S_{t}$ are of the form:
+\begin{equation*}
+\frac {dS_{t}}{S_{t-}}=\mu (t, S_{t})dt + \sigma (t, S_{t}) Z_{t} + c (t, S_{t-})dN_{t}
+\end{equation*}
+
+where ${Z_{t}, t \geq 0}$ is a standard Brownian motion, ${N_{t}, t \geq 0}$ is a Poisson process with intensity $\lambda >0$, $t \geq 0$, with $X_{0} > 0$ and  $c(.)$ the jump component. The parameter $\lambda$ of the Poisson process models events driven by uncertainty.
+
+The intensity $\lambda$ of the counting process (compound Poisson process) is a measure of the rate of change of its predictable path. The process $\lambda = (\lambda _{t})_{t \geq 0}$ is called the intensity of the counting process if,  $\forall t = 0$:
+\begin{equation*}
+\int_{0}^{t} \lambda_{s} ds < \infty,  \text{and} \space E|\int_{o}^{\infty} C_{s} dN_{s}| = E|\int_{o}^{\infty} C_{s} \lambda d_{s}|
+\end{equation*}
+for all non-negative $(F_{t})_{t \geq 0}$ and predictable processes $C = (C_{t})_{t \geq 0}$, and the counting process $N = (N_{t})_{t \geq 0}$.
+
+In line with the work of Ogbogbo (2016) for the spot price of crude oil, we assume the following jump-diffusion process for the price of crude oil at time t:
+\begin{equation*}
+S_{t} = S_{0} \exp {(\mu - \frac {\sigma ^2}{2})t + \sigma Z_{t} + \sum_{t=1}^{N_{t}} J_{t}}
+\end{equation*}
+where jumps of the process are normally distributed with parameters $(\beta, \delta)$. 
+
+## Discussion on Parameters Calibration using Yuima package in R
+
+Estimating parameters using the Maximum Likelihood estimation and Quasi Maximum likelihood did not yield explicit expressions for all the parameters, while some anomalies were observed in parameter values for the method of cumulants. As such, explicit equations cannot be obtained for all the parameters.
+
+The YUIMA Project is an open source academic project aimed at developing a complete environment for estimation and simulation of Stochastic Differential Equations and other Stochastic Processes through the 'yuima' R package.
+
+In the YUIMA package, the function setModel() is used to give a mathematical description of the SDE, while parameter estimation is performed using the Quasi Maximum Likelihood Estimation qmle(). setYuima() creates a "yuima" object by combining "model", "data", "sampling", "characteristic" and "functional"slots. setData() sets and accesses data of an object of type "yuima.data" or "yuima". "CP" is used to describe the Compund Poisson Process with intensity $\lambda$. Here, the L-BFGS_B is used since the lower and upper bounds are specified in the code. 
+
+Using empirical data, the Yuima package performs parameter estimation for the specified model. In this case, our model specification includes five parameters: drift($\mu$), volatility($\sigma$), intensity of the Compound Poisson Process($\lambda$), mean of the jump size($\beta$) and volatility of the jump size($\delta$). Through the summary() function, we are also able to visualize other statistics such as estimated number of jumps, and ultimately we simulate a plot from randomly generated model sample paths.
+
+
+\section{Data Analysis} #same as using one hashtag
+
+\subsection{a) Loading the Yuima Package}
+```{r}
+#install.packages("yuima")
+library(yuima)
+```
+
+\subsection{b) Reading In The Data}
+```{r}
+library(readxl)
+RBRTEd <- read_excel("F:/Classwork/Year I/Year I Sem III/Energy Analytics/Class 5/RBRTEd.xls", sheet = "Data 1")
+head(RBRTEd)
+
+```
+
+\subsection{c) Function To Calculate and Plot The Yuima Estimates}
+```{r}
+prices <- RBRTEd$`Europe Brent Spot Price FOB (Dollars per Barrel)`
+
+k<-numeric(length = length(prices))
+
+Date <- RBRTEd$Date
+
+Yum <- function(k, prices, Date){
+  Delta <- 1/12
+  x <- list(prices)
+  x$Date <- Date
+  
+  x$Date<-as.numeric(x$Date)/100
+
+ 
+  tmp <- setYuima(data = setData(x[[k]], delta = Delta))
+  #order.by = x$Date
+  
+ Main<-c("Europe Brent Spot Price")
+ 
+ #Pre-Estimates of GBM parameters
+ a.hat <- var(diff(log(x[[k]])))/Delta
+ b.hat <- mean(diff(log(x[[k]])))/Delta + 0.5 * a.hat
+ 
+ model <- setModel(drift="mu*x", diffusion="sigma*x", jump.coeff="1", measure=list(intensity="lambda", df=list("dnorm(z, beta, dels)")), measure.type="CP", solve.variable="x")
+ 
+ yuima <- setYuima(model=model, data=tmp@data)
+ 
+ #Bounds
+ lower <- list(mu=0.01, sigma=0.01,lambda=0.001,beta=0.1,dels=0.1)
+ upper <- list(mu=100, sigma=100,lambda=25,beta=100,dels=20)
+ start <- list(mu=b.hat, sigma=a.hat, lambda=5, beta=10, dels=2)
+ out <- qmle(yuima,start=start,threshold=sqrt(1/Delta),
+ upper=upper,lower=lower,method="L-BFGS-B")
+ 
+ plot(yuima,ylab="Price", xlab="Days", main=paste("Crude Price of ", Main[k]), lty = 2)
+
+ plot(out,col="red", lty = 1)
+ 
+ legend("topleft",col=c(1,2),lty=c(2,1),
+ legend=c("True Value","Forecast"), cex = 0.7)
+ 
+ return(summary(out))
+}
+
+
+k<-1      # k refers to Europe Brent Spot Price (i.e a vector of prices)
+
+sapply(k,function(k)Yum(k,prices,Date))  # Computes the estimates and plot it for the Price data
+```
+
+\section{Results and Discussion}
+
+\subsection{Parameter Estimates}
+```{r}
+output <- summary(out)
+
+#ACCESSING PARAMETER VALUES
+Values<-output@coef[,1]
+Values <- c(Values, length(output@Jump.times))
+Values
+
+#ACCESSING PARAMETER STANDARD ERRORS
+SE <- output@coef[,2]
+SE <- c(SE[1], SE[2], SE[3], SE[4], SE[5], 0)
+SE
+```
+
+\subsection{Tabled Parameter Estimates}
+```{r}
+install.packages("kableExtra")
+library(knitr)
+options(knitr.table.format = "latex")
+options(kableExtra.auto_format = TRUE)
+library(kableExtra)
+
+text_tbl <- data.frame(Parameters = c("Volatility(σ) ", "Drift(µ)", "Intensity of CP(λ)", "Mean of J(β)", "Volatility of J(δ)", "Number of Estimated Jumps"), Values, SE)
+
+text_tbl<-t(text_tbl)
+
+kable(text_tbl, caption = "Parameter Estimates for the European Bent Crude Oil Spot Price") %>%
+  kable_styling(full_width = T) %>%
+  column_spec(1, bold = T, italic = F, color = "black") %>%
+  row_spec(2, color = "black", background = "white", align = T)
+```
+
+It is worth noting that there was no need to tweak any of the parameters, or to restrict their estimates in order to get output in the YUIMA package.The YUIMA package therefore provides a direction in interpreting oil behaviour, and gives a possible guide for predicting the market. It also does so efficiently. 
+
+Checking the model estimates, it is worth noting that the Volatility of the diffusion process ($\sigma$) and that of the Jumps ($\delta$) are both positive and significant . The higher variance of the jump component ($4.93642177$) was indicates frequency of the jumps, and with higher probability and dominance in the oil price dynamics. The intensity of the Compound Poisson process (the probability that the jump is high) shows that change in the process' regular path is frequently altered significantly by the occurence of jumps.Positive estimates for the mean and volatility of the diffusion process is an indicator that oil price tends to be monotone increasing.
+
+\section{Conclusion}
+We do not have to fix or restrict any values for parameter estimates when using the YUIMA package, which results in accurate estimates. The package has overcome difficulties that were previously experienced while using other methods of parameter estimation such as the Maximum Likelihood Estimation method and the method of cumulants. Through the specified model equation in the setModel() function, estimated parameters can be used to simulate the model equation and consequently, to obtain forecasts for the crude oil spot price. This means that a feasible solution is obtained. 
+
+The model thus becomes a significant and feasible mathematical tool for the expression of real market characteristics for the oil price dynamics, and as a result, forecasting can be done by investors, hedgers (risk control), oil company managers, financial advisors and other market players in the oil market and industry. 
+
+\section{References}
+Merton, R. C. (1976). Option pricing when underlying stock returns are discontinuous. Journal of Financial Economics, 3(1), 125–144. https://doi.org/10.1016/0304-405X(76)90022-2
+
+Ogbogbo, C. P. (2018). Jump-Diffusion model for crude oil spot price process: parameter estimation for predicting the market. Journal of Science, 58, 59-69.
+
+Tankov, P., & Voltchkova, E. (n.d.). Jump-diﬀusion models: A practitioner’s guide. 24.

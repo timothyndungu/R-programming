@@ -1,0 +1,168 @@
+---
+title: "CAT 2 145445"
+author: "Timothy Ndungu"
+date: "2023-11-10"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+pca <- read.csv("C:/Users/Ndungu/Downloads/NSE_omitted.csv")
+
+
+colnames(pca) = c("ABSA Bank Kenya Plc", "ABSA NewGold ETF", "Bamburi Cement Ltd", "BK Group Plc", "BOC Kenya Plc", "Britam Holdings Plc", "British American Tobacco Kenya", "Car and General (K) Ltd", "Carbacid Investments Plc", "Centum Investment Company Plc", "CIC Insurance Group Ltd", "Co-operative Bank of Kenya Ltd", "Crown Paints Kenya Plc", "Diamond Trust Bank Kenya Ltd", "Eaagads Ltd", "East African Breweries Ltd", "East African Cables Ltd", "East African Portland Cement Ltd", "Equity Group Holdings Plc", "Eveready East Africa Ltd", "Express Kenya Plc", "Flame Tree Group Holdings Ltd", "HF Group Ltd", "Home Afrika Ltd", "I & M Holdings Plc", "Jubilee Holdings Ltd", "Kakuzi Plc", "Kapchorua Tea Kenya Plc", "KCB Group Plc", "Kenya Electricity Generating Company Plc", "Kenya Orchads Ltd", "Kenya Power and Lighting Company Plc", "Kenya Re-Insurance Corporation", "KPLC-P4", "Liberty Kenya Holdings Ltd", "Limuru Tea Plc", "Longhorn Publishers Plc", "Nairobi Business Ventures Ltd", "Nation Media Group Plc", "NCBA Group Plc", "Olympia Capital Holdings Ltd", "Safaricom Plc", "Sameer Africa Plc", "Sanlam Kenya Plc", "Sasini Plc", "Stanbic Holdings Plc", "Standard Chartered Bank Kenya Ltd", "Standard Group Plc", "Stanlib Fahari Income-REIT", "Total Kenya Ltd", "TPS Eastern Africa (Serena) Ltd", "Trans-Century Plc", "Uchumi Supermarket Plc", "Umeme Ltd", "Unga Group Ltd", "Williamson Tea Kenya Plc", "WPP ScanGroup Plc", "Zamara Kenya Equity Index (KES)", "Zamara Kenya Equity Index (USD)")
+
+ 
+head(pca)
+tail(pca)
+```
+
+On the excel sheet, I dropped all the companies(6 companies) that did not have a single change in their stock prices from 4th January 2021 to 31st August 2021 in order to be able to run the Principal Component Analysis.
+
+
+```{r}
+class(pca)
+```
+
+##Correlation matrix
+```{r}
+pcacor <- cor(pca)
+pcacor
+
+```
+
+##Variance-Covariance matrix
+```{r}
+pcacov <- cov(pca)
+pcacov
+```
+
+
+##  check for Statistical significance of the bivariate correlations.
+```{r}
+library(psych)
+
+statSig <- corr.p(pcacor, 166, alpha=.05)
+print(statSig, short = FALSE) # short=FALSE prints confidence intervals
+```
+
+
+
+##  test for Sphericity and Sample adequacy using the paf() function that performs both Bartlett and KMO tests.
+
+```{r}
+library(rela) # download and install package from archive
+# coerce data into a matrix and ignore headers
+dat <- data.matrix(pca[1:59])
+paf.pca <- paf(dat, eigcrit=1, convcrit=.001)
+summary(paf.pca) # Notice Bartlett and KMO values and ignore the rest
+```
+
+
+The KMO of 0.50553 is sufficiently high enough for the scope of this example.  KMO > 0.5 is generally acceptable.
+
+As the Bartlett chi-square = 2487.9 does not show p-values, we calculate this separately;
+
+```{r}
+#Bartlett significance test using correlation matrix
+cortest.bartlett(pcacor, n=166)
+```
+
+
+The low p-value proves statistical significance, indicating that correlations are not near zero.
+
+```{r}
+# Verify that the determinant is positive
+det(pcacor)
+```
+
+
+The positive determinant concludes the tests and allows us to proceed with the PCA modelling.
+
+
+## We assess the components needed using the principal() function.
+```{r}
+pca1Component <- principal(pcacor, rotate="none")
+# default with 1 component and no scores
+pca1Component
+```
+
+
+The sum of the h^2 values are the eigenvalues, with a proportion variance of 0.07. This implies that we have yet to explain 93% of the variance, and therefore need additional principal components.
+ 
+```{r}
+pca59Components <- principal(pcacor, nfactors=59, rotate="none")
+#we calculate all 59 components
+pca59Components
+```
+The eigenvalues and proportion of variance are given in the output code above. We now can decide which variables to keep and the proportion of variance we are comfortable with.
+
+We also need to be mindful of the residual errors. We can use the Cronbach alpha reliability co-efficient to assess internal consistency. Internal consistency tests measure whether different items that are expected to measure the same thing actually give similar scores.
+ 
+```{r}
+alpha(pcacor) #higher values better reliability
+```
+The overrall raw-alpha score is 0.37499. 
+
+To determine which variables possess the greatest reliability, first check if any of the variable-specific raw alpha values are greater than the overall raw alpha score.
+If the reliability increases after an item is dropped, which is the case for ABSA NewGold ETF, BK Group Plc, BOC Kenya Plc, Britam Holdings Plc, British American Tobacco Kenya, Car and General (K) Ltd, Centum Investment Company Plc, Crown Paints Kenya Plc, Diamond Trust Bank Kenya Ltd, Eaagads Ltd, East African Cables Ltd, East African Portland Cement Ltd, Flame Tree Group Holdings Ltd, Home Afrika Ltd, I & M Holdings Plc, Jubilee Holdings Ltd, Kakuzi Plc, Kenya Electricity Generating Company Plc, Kenya Power and Lighting Company Plc, Kenya Re-Insurance Corporation, KPLC-P4, Limuru Tea Plc, Nairobi Business Ventures Ltd, Nation Media Group Plc, Olympia Capital Holdings Ltd, Standard Group Plc, Trans-Century Plc, Umeme Ltd and WPP ScanGroup Plc, then this variable has a lower reliability. 
+If reliability drops after removing a variable, as it is for the other companies, then this variable should be kept as it has higher reliability.
+
+Some companies may have less reliability because of their volatile share prices or corruption and misintegrity in their companies.
+
+
+
+
+## Results Visualization
+The Scree plot provides further visualization. Parallel analysis is applied in this case. This `compares the scree of factors of the observed data with that of a random data matrix of the same size as the original’
+
+```{r}
+fa.parallel(pca,n.obs=166, fm="pa", fa="pc")
+```
+```{r}
+fa.diagram(pca1Component) 
+```
+ 
+
+```{r}
+pca2Components <- principal(pcacor, nfactors=2, rotate="none")
+#we calculate 2 components
+pca2Components
+```
+
+```{r}
+fa.diagram(pca2Components) 
+```
+
+
+```{r}
+fa.diagram(pca59Components) 
+```
+
+PC1 to PC20 in total explain 61% of the variance, and some may find this sufficient for their needs. Others may want to go all the way to PC30, to be able to explain 79% of variance. The final choices will really be a tradeoff between computational efficiency and accuracy.
+I choose to go with 30 components as they fully map our 59 original variables.
+
+
+
+```{r}
+# Use data instead of correlation matrix
+pca.results <- principal(pca,nfactors=59,rotate='none')
+pca.results$scores
+```
+
+```{r}
+#now correlate the scores to check for independence
+cor(pca.results$scores) #these should be orthogonal
+```
+
+
+```{r}
+round(cor(pca.results$scores)) #round off for better visualizatio
+```
+
+I would say the performance of the Nairobi Stock Exchange has an overconfidence bias towards some of the companies listed in the Nairobi Stock Exchange such as Safaricom Plc due to their past trends and how well they are performing.  

@@ -1,0 +1,301 @@
+---
+title: "Credit Risk Analysis"
+author: "Timothy Ndungu"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Reading in the Data
+
+```{r}
+
+
+library(readxl)
+credit_data <- read_excel("C:/Users/Ndungu/Downloads/credit_data.xlsx", 
+    col_types = c("text", "skip", "numeric", 
+        "text", "skip", "text", "skip", "numeric", 
+        "text", "skip", "text", "skip", "numeric", 
+        "text", "skip", "text", "skip", "numeric", 
+        "text", "skip", "numeric", "text", 
+        "skip", "text", "skip", "numeric", 
+        "numeric", "numeric", "text", "skip", 
+        "text", "skip", "text", "skip"))
+head(credit_data)
+
+```
+
+# Data Preprocessing
+
+## Overview of Data
+
+```{r}
+class(credit_data)
+```
+
+```{r}
+summary(credit_data)
+```
+## Sample Data Plots
+
+```{r}
+
+par(mfrow = c(2,2))
+
+# frequency plots of numeric variables 
+hist(credit_data$default, main = "Plot of Debtors Default in Credit History", xlab = "Default")
+hist(credit_data$age, main = "Plot of Ages of Debtors in Credit History", xlab = "Age")
+
+# frequency plots of character variables 
+plot(as.factor(credit_data$job), main = "Plot of Job Groups of Debtors in Credit History", xlab = "Job Groups")
+plot(as.factor(credit_data$housing), main = "Plot of Housing of Debtors in Credit History", xlab = "Housing")
+
+```
+
+## Character to Numeric Data
+
+```{r}
+
+# Factor out numeric columns
+num_data <- credit_data[ , 1:8]
+head(num_data )
+
+```
+
+```{r}
+
+# function to change categorical character data to numeric data
+
+checking_balance <- factor(credit_data$checking_balance, ordered = TRUE)
+head(checking_balance)
+
+head(as.numeric(checking_balance))
+
+```
+
+```{r}
+
+# generalizing the function to apply to all columns
+
+char_cols <- credit_data[ , 9:ncol(credit_data)]
+
+fact_function <- function(x){
+  return(as.numeric(factor(x, ordered = TRUE)))
+}
+
+char_data <- lapply(char_cols, fact_function)
+char_data <- as.data.frame(char_data, col.names = colnames(char_cols))
+head(char_data)
+
+```
+
+```{r}
+# the final dataset
+
+data <- cbind.data.frame(num_data, char_data)
+head(data)
+```
+
+# Fitting a Linear Regression Model
+
+```{r}
+
+linear_model <- lm(data$default~., data = data)
+
+summary(linear_model)
+```
+
+### Checking for Homoscedasticity
+
+```{r}
+par(mfrow = c(2,2))
+plot(linear_model)
+```
+
+# Fitting a Logistic Regression Model 
+
+This iks given that our response variable is binary where 1 represents default event, while 2 (now changed to 0) represents no default. 
+
+## Train - Test Split
+
+## Manually (80 - 20)
+
+```{r}
+
+data$default = ifelse(data$default==2, 0, data$default)
+table(data$default)
+```
+
+
+```{r}
+
+# we have 1000 data points (rows) on 21 variables (columns)
+# 80% of this is 800 rows
+
+train_data <- data[1:800, ]
+test_data <- data[801:1000, ]
+```
+
+## Fitting a linear model on the train data
+
+```{r}
+training_logistic_model <- glm(train_data$default~., data = train_data, family = "binomial")
+
+summary(training_logistic_model)
+```
+
+## Automatic Split
+
+Much better and functional
+
+```{r}
+# install.packages("caTools") # for logistic regression
+# install.packages("ROCR") # for model evaluation
+
+library(caTools)
+library(ROCR)
+```
+
+
+```{r}
+split_data <- sample.split(data, SplitRatio = 0.8)
+
+# split ration is 80:20
+
+head(split_data)
+```
+```{r}
+traindata <- subset(data, split_data == "TRUE")  # picks datapoints that return TRUE
+testdata <- subset(data, split_data == "FALSE")
+```
+
+
+### Fitting the Logistic Model
+
+
+```{r}
+
+# Logistic Model on the Training model
+logistic_model <- glm(traindata$default~., data = traindata, family = "binomial")
+summary(logistic_model)
+
+```
+
+```{r}
+
+train_predict <- predict(logistic_model, testdata, type = "response")
+head(train_predict)
+```
+
+```{r}
+
+# change output to probabilities
+predicted_probs <- ifelse(train_predict >0.5, 1, 0)
+head(predicted_probs)
+```
+```{r}
+
+table(predicted_probs)
+table(testdata$default)
+```
+
+
+```{r}
+# output comparison of predicted probabilities against actual data
+
+output <- data.frame(testdata$default, predicted_probs)
+
+head(output)
+```
+
+# K Means Clustering
+
+K-means clustering is a clustering algorithm that tries to partition a set of points into K sets (clusters) such that the points in each cluster tend to be near each other1. It is unsupervised because the points have no external classification1. However, the k-means algorithm requires the number of clusters to be specified beforehand, which can be seen as a form of prior knowledge or supervision.
+
+```{r}
+# Installing Packages
+# install.packages("ClusterR")
+# install.packages("cluster")
+  
+# Loading package
+library(ClusterR)
+library(cluster)
+```
+
+```{r}
+# Fitting K-Means clustering Model to training dataset, with 3 centroids
+
+set.seed(240) # Setting seed
+kmeans.re <- kmeans(traindata, centers = 2, nstart = 20)
+kmeans.re
+```
+The within-cluster variation is  70.8 %
+
+IT is strongly recommended to always running K-means clustering with a large value of nstart, such as 20 or 50, since otherwise an undesirable local optimum may be obtained.
+```{r}
+par (mfrow = c(1, 2))
+
+plot (traindata, col = (kmeans.re$cluster + 1), main = "K- Means Clustering Results with K = 2", pch = 20, cex = 2)
+
+```
+# K Nearest Neighbours
+```{r}
+#install.packages("class")
+
+library(class)
+```
+
+We will use the traindata and testdata we created under logistic regression, i.e.,
+
+1. A matrix containing the predictors associated with the training data, labeled train.X below.  
+2. A matrix containing the predictors associated with the data for which we wish to make predictions, labeled test.X below.
+3. A vector containing the class labels for the training observations, labeled train.Default below.
+4. A value for K, the number of nearest neighbors to be used by the classifier
+
+```{r}
+train.X <- traindata
+test.X <- testdata
+
+train.Default <- traindata$default
+class(train.Default)
+```
+ 
+## Fitting the KNN classifier
+```{r}
+# set.seed(1)
+
+knn.pred <- knn(train.X, test.X, train.Default , k = 1)
+
+```
+```{r}
+table (knn.pred , testdata$default)
+```
+```{r}
+accuracy <- (24 + 119)/238
+accuracy
+```
+ 
+ The results using K = 1 indicate that 60% % of the observations are correctly predicted. It may be that K = 1 results in an overly flexible fit to the data. Below, we repeat the analysis using K = 3. 
+ 
+```{r}
+knn.pred2 <- knn (train.X, test.X, train.Default , k = 3)
+table (knn.pred2 , testdata$default)
+
+mean(knn.pred2 == testdata$default)
+```
+
+The accuracy has improved to 70.16%.
+```{r}
+knn.pred3 <- knn (train.X, test.X, train.Default , k = 5)
+table (knn.pred3 , testdata$default)
+
+mean(knn.pred3 == testdata$default)
+```
+ The accuracy does not improve any further. 
+
+
+

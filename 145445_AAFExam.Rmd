@@ -1,0 +1,482 @@
+---
+title: "AAPE EXAM"
+author: "145445_Timothy Ndungu_AAPExam"
+date: "2023-12-18"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+#(i)
+
+# Reading in the Data
+
+```{r}
+library(readr)
+house_data <- read_csv("C:/Users/Ndungu/Downloads/DATA - in.csv")
+head(house_data)
+
+```
+
+```{r}
+summary(house_data)
+```
+
+```{r}
+str(house_data)
+```
+
+```{r}
+class(house_data)
+```
+
+```{r}
+#Exploring the data and correlations within it using detailed plots
+
+library(psych)
+library(corrplot)
+# Create a scatterplot matrix
+pairs(house_data[c("squareMeters", "numberOfRooms", "cityCode", "basement","attic","price")])
+
+pairs.panels(house_data[ c("squareMeters", "numberOfRooms", "cityCode", "basement","attic","price")])
+
+cor(house_data[ c("squareMeters", "numberOfRooms", "cityCode", "basement","attic","price")])
+
+correlation_matrix <- cor(house_data[c("squareMeters", "numberOfRooms", "cityCode", "basement", "attic", "price")])
+print(correlation_matrix)
+
+
+# Create the correlation plot
+corrplot(correlation_matrix, method = "number", type = "upper", order =
+"hclust", addCoef.col = "black")
+```
+
+# I decided to use the squareMeters, attic, basement, number of rooms and cityCode variables as they all greatly affect the price of the houses.
+
+## Qn. 1(ii)
+
+```{r}
+library(caTools)
+library(ROCR)
+
+
+# Set a seed for reproducibility
+set.seed(123)
+# Create an index for splitting the data
+index <- sample(1:nrow(house_data), 0.7 * nrow(house_data))
+# Split the data into training and test sets
+train_data <- house_data[index, ]
+test_data <- house_data[-index, ]
+
+```
+
+#Qn 1(iii)
+```{r}
+lm.housedata <- lm(price ~ squareMeters + attic + basement + cityCode + numberOfRooms, data = train_data)
+
+summary(lm.housedata)
+```
+**Intercept (Intercept):** The intercept is approximately 6653.12. This is the estimated price of house when all other predictor variables are zero.
+
+**Square Meters:** The coefficient for square meters is approximately 99.998797. For each one-unit increase in square meters , the price of the house increases by approximately 100 units. The bigger ther house the more expensive it is.
+
+
+- The Multiple R-squared value (R²) is 1, which means that approximately 100% of the variance in  prices is explained by the model.
+- The Adjusted R-squared (Adjusted R²) is 1, which is similar to R² and adjusts for the number of predictors.
+
+
+#Qn 1(iv)
+
+```{r}
+train_predict <- predict(lm.housedata, test_data, type = "response")
+head(train_predict)
+```
+
+```{r}
+
+# change output to probabilities
+predicted_probs <- ifelse(train_predict >0.5, 1, 0)
+head(predicted_probs)
+
+
+library(caret)
+conf_matrix <- table(predicted_probs, test_data$price)
+
+
+accuracy <- mean (predicted_probs ==test_data$price)
+accuracy
+
+```
+#Qn 1(v)
+
+```{r}
+# Transform data based on the consultant's advice
+house_data$squareMeters_threshold <- ifelse(house_data$squareMeters > mean(house_data$squareMeters), 1, 0)
+house_data$numberOfRooms_threshold <- ifelse(house_data$numberOfRooms > mean(house_data$numberOfRooms), 1, 0)
+# Create interaction terms
+
+
+house_data$city_owners_interaction <- house_data$cityPartRange * house_data$numPrevOwners
+house_data$guest_pool_interaction <- house_data$hasGuestRoom * house_data$hasPool
+# Train a new model
+new_model <- lm(price ~  house_data$squareMeters_threshold + house_data$numberOfRooms_threshold + house_data$city_owners_interaction +
+ house_data$guest_pool_interaction + squareMeters + numberOfRooms + cityCode, data =
+house_data)
+# Explore coefficients and model performance
+summary(new_model)
+```
+
+
+
+
+## Question Four
+
+```{r}
+library(readr)
+findata1 <- read_csv("C:/Users/Ndungu/Downloads/Financial_crisis1 - Financial_crisis1.csv")
+head(findata1)
+
+```
+
+```{r}
+library(readr)
+findata2 <- read_csv("C:/Users/Ndungu/Downloads/Financial_crisis2 - Financial_crisis2.csv")
+head(findata2)
+
+```
+
+
+```{r}
+findata2.1 = findata2[c("loan_amnt","funded_amnt_inv","int_rate_st","installment","grade","annual_inc","loan_status")]
+findata2.df = as.data.frame(findata2.1)
+```
+
+```{r}
+findata1.1 = findata1[c("loan_amnt","funded_amnt_inv","int_rate_st","installment","grade","annual_inc","loan_status")]
+findata1.df = as.data.frame(findata1.1)
+```
+
+
+
+
+
+
+# Qn. 4(iv)
+```{r}
+library(rpart)
+LoanModel <- rpart(loan_amnt ~ ., data=findata1.df, method="class", parms = list(split="information"), cp=-1)
+
+LoanModel
+```
+
+```{r}
+library(rattle)
+library(tibble)
+library(bitops)
+
+library(rpart.plot)
+library(RColorBrewer)
+#Create the decision tree
+fancyRpartPlot(LoanModel)
+```
+```{r}
+# Show the tree at depth=8 for better visualization
+loanTreeModel <- rpart(loan_amnt ~., data= findata1.df, method="class", parms=list(split="information"), maxdepth=8, minsplit=4, minbucket=4)
+loanTreeModel
+```
+
+```{r}
+fancyRpartPlot(loanTreeModel)
+
+```
+```{r}
+printcp(loanTreeModel)
+```
+
+```{r}
+plotcp(loanTreeModel)
+```
+
+```{r}
+# The pruned tree model
+# Since the cp value is greater than 0.01, set to 0.02
+loanTreeModel.pruned <- prune(loanTreeModel, cp=0.02)
+loanTreeModel.pruned
+```
+
+```{r}
+# Show the pruned tree
+fancyRpartPlot(loanTreeModel.pruned)
+
+```
+
+```{r}
+pred <- predict(loanTreeModel.pruned, newdata=findata2.df, type="class")
+pred.df <- data.frame(pred)
+
+head(pred.df)
+tail(pred.df)
+```
+```{r}
+table(findata2.df$loan_amnt, pred.df$pred) 
+```
+
+```{r}
+classification.error <- mean(pred.df$pred != findata2.df$loan_amnt)
+classification.error
+```
+```{r}
+accuracy <- 1 - classification.error
+accuracy
+```
+# very low accuracy score showing that the decision tree has a low predictive ability for this data.
+
+```{r}
+probMatrix <- predict(loanTreeModel.pruned, newdata=findata2.df, type="prob")
+probMatrix.df <- data.frame(probMatrix)
+#Show the matrix, where X0 denotes prob(No) and X1 denotes prob(Yes)
+options(scipen = 999 )
+head(probMatrix.df)
+tail(probMatrix.df)
+```
+# neural networks could improve on this ability and would perform better than decision trees
+
+
+# Qn 4(v)
+```{r}
+summary(findata1)
+
+```
+```{r}
+summary(findata2)
+```
+
+
+
+
+## Question 2
+
+# Qn 2(i)
+```{r}
+library(readr)
+defaultdata <- read_csv("C:/Users/Ndungu/Downloads/DATASET - in.csv")
+head(defaultdata)
+
+```
+```{r}
+summary(defaultdata)
+```
+```{r}
+table(defaultdata$default)
+
+# 1 = non-default
+# 2 = default
+```
+
+```{r}
+
+# Factor out numeric columns
+num_data <- defaultdata[ ,1:8]
+head(num_data )
+
+```
+
+```{r}
+
+# function to change categorical character data to numeric data
+
+checking_balance <- factor(defaultdata$checking_balance, ordered = TRUE)
+head(checking_balance)
+
+head(as.numeric(checking_balance))
+
+```
+
+```{r}
+
+# generalizing the function to apply to all columns
+
+char_cols <- defaultdata[ , 9:ncol(defaultdata)]
+
+fact_function <- function(x){
+  return(as.numeric(factor(x, ordered = TRUE)))
+}
+
+char_data <- lapply(char_cols, fact_function) # returns a list
+
+# sapply() - returns a vector or a matrix
+
+char_data <- as.data.frame(char_data, col.names = colnames(char_cols))
+
+head(char_data)
+```
+
+```{r}
+# the final dataset
+
+data <- cbind.data.frame(num_data, char_data)
+head(data)
+
+```
+```{r}
+split_data <- sample.split(data, SplitRatio = 0.7)
+
+# split ration is 70:30
+
+head(split_data)
+```
+```{r}
+traindata <- subset(data, split_data == "TRUE")  # picks datapoints that return TRUE
+testdata <- subset(data, split_data == "FALSE")
+
+```
+
+
+
+# Qn 2(ii)
+```{r}
+#install.packages("class")
+
+library(class)
+```
+
+We will use the traindata and testdata we created i.e.,
+
+1. A matrix containing the predictors associated with the training data, labeled train.X below.  
+2. A matrix containing the predictors associated with the data for which we wish to make predictions, labeled test.X below.
+3. A vector containing the class labels for the training observations, labeled train.Default below.
+4. A value for K, the number of nearest neighbors to be used by the classifier
+
+```{r}
+train.X <- traindata
+test.X <- testdata
+
+train.Default <- traindata$default
+class(train.Default)
+```
+## Fitting the KNN classifier
+
+```{r}
+
+# set.seed(1)
+
+knn.pred <- knn(train.X, test.X, train.Default , k = 1)
+
+```
+```{r}
+table (knn.pred , testdata$default)
+```
+#Qn 2(iii)
+```{r}
+accuracy <- (155 + 45)/nrow(testdata)
+accuracy
+```
+
+The results using K = 1 indicate that 60% % of the observations are correctly predicted. It may be that K = 1 results in an overly flexible fit to the data.  
+
+
+
+# Qn 2(iv)
+
+```{r}
+library(caret)
+
+conf_matrix <- table(knn.pred , testdata$default)
+
+
+TN <- conf_matrix[1,1]
+TP <- conf_matrix[2,2]
+FP <- conf_matrix[2,1]
+FN <- conf_matrix[1,2]
+TN
+FP
+
+accuracy <- mean (knn.pred== testdata$default)
+accuracy
+
+
+
+precision <- TP/(TP+ FP)
+
+recall <- TP/ (FN+TP)
+
+F1_score_logit <- (2*precision*recall)/(precision+recall)
+
+specificity <- TN/(TN + FP)
+
+
+
+cat("Accuracy: ", accuracy, "\n")
+
+cat("Precision: ", precision, "\n")
+cat("Recall: ", recall, "\n")
+
+cat("Specificity: ", specificity, "\n")
+cat("F-score: ", F1_score_logit, "\n")
+
+```
+1. **Accuracy**: Accuracy is a measure of how many of the predictions made by your model were correct. In your case, the accuracy is 0.6006, which means that approximately 60% of the predictions made by your model were correct.
+
+
+2. **Precision**: Precision is the ratio of true positive predictions to the total number of positive predictions made by the model. In your case, the precision is 0.39823, which means that approximately 39.8% of the positive predictions made by your model were correct.
+
+3. **Recall**: Recall, also known as sensitivity or true positive rate, is the ratio of true positive predictions to the total number of actual positive instances in the dataset. In your case, the recall is 0.40909 , indicating that your model correctly identified approximately 40.9% of the actual positive instances.
+
+4. **Specificity**: Specificity is the ratio of true negative predictions to the total number of actual negative instances in the dataset. In your case, the specificity is 0.69507 , suggesting that your model correctly identified approximately 69.5% of the actual negative instances.
+
+5. **F-score**: The F-score is the harmonic mean of precision and recall and provides a balance between the two. In your case, the F-score is 0.40359.
+
+We could improve the model by doing a lasso regression to select the variables that are most significant in predicting default.
+
+
+# Qn 2(v)
+
+```{r}
+knn.pred2 <- knn (train.X, test.X, train.Default , k = 3)
+table (knn.pred2 , testdata$default)
+
+mean(knn.pred2 == testdata$default)
+```
+```{r}
+accuracy <- (176 + 21)/nrow(testdata)
+accuracy
+```
+
+The accuracy has reduced to 59.16%.
+
+```{r}
+knn.pred3 <- knn (train.X, test.X, train.Default , k = 5)
+table (knn.pred3 , testdata$default)
+
+mean(knn.pred3 == testdata$default)
+```
+The accuracy has improved to 67.87%. 
+
+```{r}
+knn.pred4 <- knn (train.X, test.X, train.Default , k = 7)
+table (knn.pred4 , testdata$default)
+
+mean(knn.pred4 == testdata$default)
+```
+The accuracy has reduced to 66.96%. 
+
+```{r}
+knn.pred5 <- knn (train.X, test.X, train.Default , k = 10)
+table (knn.pred5 , testdata$default)
+
+mean(knn.pred5 == testdata$default)
+```
+The accuracy has reduced to 64.57%. 
+
+```{r}
+knn.pred6 <- knn (train.X, test.X, train.Default , k = 12)
+table (knn.pred6 , testdata$default)
+
+mean(knn.pred6 == testdata$default)
+```
+Accuracy does not change from k = 10. (64.57%)
+
+# I would choose knn.pred3 with k = 5 as it yields the highest accuracy.

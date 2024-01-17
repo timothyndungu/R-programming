@@ -1,0 +1,222 @@
+---
+title: "Applied Analytics Assignment"
+author: "Timothy Ndung'u"
+date: "2023-10-20"
+output: pdf_document
+  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Reading in the Data
+
+```{r}
+library(readr)
+stroke_data <- read_csv("C:/Users/Ndungu/Downloads/stroke prediction (edited).csv")
+head(stroke_data)
+
+```
+# Exploratory Data Analysis (EDA)
+
+## Overview of Data
+```{r}
+class(stroke_data)
+```
+```{r}
+summary(stroke_data)
+```
+```{r}
+table(stroke_data$stroke)
+
+# 1 = stroke
+# 0 = no stroke
+```
+
+
+## Sample Data Plots
+
+```{r}
+
+par(mfrow = c(2,2))
+
+# histogram of target variable (stroke)
+hist(stroke_data$stroke, main = "Histogram of Individuals with stroke in stroke prediction", xlab = "stroke")
+
+# frequency plots of character variables 
+plot(as.factor(stroke_data$gender), main = "Plot of gender of individuals in stroke prediction", xlab = "gender")
+plot(as.factor(stroke_data$ever_married), main = "Plot of individuals ever married in stroke prediction", xlab = "ever_married")
+plot(as.factor(stroke_data$work_type), main = "Plot of type of work of individuals in stroke prediction", xlab = "work_type")
+plot(as.factor(stroke_data$Residence_type), main = "Plot of type of residence of individuals in stroke prediction", xlab = "residence_type")
+plot(as.factor(stroke_data$smoking_status), main = "Plot of smoking status of individuals in stroke prediction", xlab = "smoking_status")
+
+# histogram of numeric variables 
+hist(stroke_data$id, main = "Histogram of id no. of individuals in stroke prediction", xlab = "id")
+hist(stroke_data$age, main = "Histogram of age of individuals in stroke prediction", xlab = "age")
+hist(stroke_data$hypertension, main = "Histogram of individuals with hypertension in stroke prediction", xlab = "hypertension")
+hist(stroke_data$heart_disease, main = "Histogram of individuals with heart disease in stroke prediction", xlab = "heart_disease")
+hist(stroke_data$avg_glucose_level, main = "Histogram of avg. glucose level of individuals in stroke prediction", xlab = "avg_glucose_level")
+hist(stroke_data$bmi, main = "Histogram of bmi of individuals in stroke prediction", xlab = "bmi")
+
+```
+
+
+
+
+# Data Preprocessing
+
+## Character to Numeric Data
+
+Regression models necessitate that the data should be numeric. Otherwise, we need to implement a classification models such as K-Means, KNN, Tree-based methods. 
+
+```{r}
+
+# Factor out numeric columns
+num_data <- stroke_data[ ,1:8]
+head(num_data )
+
+
+```
+
+```{r}
+
+# function to change categorical character data to numeric data
+
+gender <- factor(stroke_data$gender, ordered = TRUE)
+head(gender)
+
+head(as.numeric(gender))
+
+```
+
+```{r}
+
+# generalizing the function to apply to all columns
+
+char_cols <- stroke_data[ , 9:ncol(stroke_data)]
+
+fact_function <- function(x){
+  return(as.numeric(factor(x, ordered = TRUE)))
+}
+
+char_data <- lapply(char_cols, fact_function) # returns a list
+
+# sapply() - returns a vector or a matrix
+
+char_data <- as.data.frame(char_data, col.names = colnames(char_cols))
+
+head(char_data)
+```
+
+```{r}
+# the final dataset
+
+data <- cbind.data.frame(num_data, char_data)
+head(data)
+
+```
+
+
+
+# Fitting a Logistic Regression Model 
+
+This is given that our response variable is binary where 1 represents default event, while 2 (now changed to 0) represents no default. 
+
+## Train - Test Split
+
+
+```{r}
+# install.packages("caTools") # for logistic regression
+# install.packages("ROCR") # for model evaluation
+
+library(caTools)
+library(ROCR)
+```
+```{r}
+
+logi_data <- data
+
+logi_data$stroke <- ifelse(logi_data$stroke == 2, 0, logi_data$stroke)
+
+## assigning default events (2) to value 0 for fitting a logistic model
+
+head(logi_data)
+
+```
+
+
+```{r}
+split_data <- sample.split(logi_data, SplitRatio = 0.7)
+
+# split ration is 70:30
+
+head(split_data)
+```
+```{r}
+traindata <- subset(logi_data, split_data == "TRUE")  # picks datapoints that return TRUE
+testdata <- subset(logi_data, split_data == "FALSE")
+
+```
+
+
+### Fitting the Logistic Model
+
+```{r}
+
+# Logistic Model on the Training model
+logistic_model <- glm(traindata$stroke~., data = traindata, family = "binomial")
+summary(logistic_model)
+
+```
+
+The dispersion parameter is a scaling parameter added to help fit the model. 
+
+Fisher scoring is a statistical method for finding the maximum likelihood estimate of a parameter.
+
+```{r}
+
+train_predict <- predict(logistic_model, testdata, type = "response")
+
+# predict future probability values using the testdata
+
+head(train_predict)
+```
+
+```{r}
+
+# change output to probabilities by assigning them to values 0 or 1
+predicted_probs <- ifelse(train_predict >0.5, 1, 0)
+
+head(predicted_probs)
+```
+```{r}
+table(predicted_probs)
+table(testdata$stroke)
+```
+
+
+```{r}
+
+# output comparison of predicted probabilities against actual data
+
+output <- data.frame(testdata$stroke, predicted_probs)
+
+head(output)
+```
+
+```{r}
+library(caret)
+predicted = predict(logistic_model,testdata,type="response")
+testdata$traindata$stroke = ifelse(testdata$traindata$stroke=="Yes",1,0)
+testdata$traindata$stroke = as.factor(testdata$traindata$stroke)
+predicted = as.factor(predicted)
+
+
+```
+
+
+
+
+
